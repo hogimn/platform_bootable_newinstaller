@@ -32,7 +32,9 @@ LOCAL_MODULE_CLASS := EXECUTABLES
 LOCAL_POST_INSTALL_CMD := $(hide) sed -i "s|CMDLINE|$(BOARD_KERNEL_CMDLINE)|" $(HOST_OUT_EXECUTABLES)/$(LOCAL_MODULE)
 include $(BUILD_PREBUILT)
 
-VER ?= $$(date +"%F")
+# VER ?= $$(date +"%F")
+# $SRC = android-$VER
+VER ?= x86
 
 # use squashfs for iso, unless explictly disabled
 ifneq ($(USE_SQUASHFS),0)
@@ -114,9 +116,10 @@ $(EFI_IMAGE): $(wildcard $(LOCAL_PATH)/boot/boot/*/*) $(BUILT_IMG) $(ESP_LAYOUT)
 	$(hide) cat /dev/null > $@; $(edit_mbr) -l $(ESP_LAYOUT) -i $@ esp=$@.fat
 	$(hide) rm -f $@.fat
 
-.PHONY: iso_img usb_img efi_img rpm
+.PHONY: iso_img usb_img efi_img rpm initrd
 iso_img: $(ISO_IMAGE)
 usb_img: $(ISO_IMAGE)
 efi_img: $(EFI_IMAGE)
+initrd:  $(BUILT_IMG)
 
 endif

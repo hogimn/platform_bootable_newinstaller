@@ -79,7 +79,15 @@ check_root()
 	else
 		dev=$1
 	fi
+
 	try_mount ro $dev /mnt || return 1
+
+	echo "dev is mounted in /mnt, mount succeeded"
+	echo "ls -l /mnt"
+	ls -l /mnt
+	echo "ls -l /mnt/$SRC"
+	ls -l /mnt/$SRC
+
 	if [ -n "$iso" -a -e /mnt/$iso ]; then
 		mount --move /mnt /iso
 		mkdir /mnt/iso
@@ -87,24 +95,33 @@ check_root()
 		SRC=iso
 	fi
 	if [ -e /mnt/$SRC/$RAMDISK ]; then
+		echo "$RAMDISK is found at /mnt/$SRC/$RAMDISK"
 		zcat /mnt/$SRC/$RAMDISK | cpio -id > /dev/null
 	elif [ -b /dev/$RAMDISK ]; then
+		echo "$RAMDISK is found at /dev/$RAMDISK"
 		zcat /dev/$RAMDISK | cpio -id > /dev/null
 	else
+		echo "$RAMDISK is not found at /mnt/$SRC/$RAMDISK"
+		echo "$RAMDISK is not found at /dev/$RAMDISK"
 		return 1
 	fi
 	if [ -e /mnt/$SRC/system.sfs ]; then
+		echo "system.sfs is found at /mnt/$SRC/system.sfs"
 		mount -o loop,noatime /mnt/$SRC/system.sfs /sfs
 		mount -o loop,noatime /sfs/system.img system
 	elif [ -e /mnt/$SRC/system.img ]; then
+		echo "system.img is found at /mnt/$SRC/system.img"
 		remount_rw
 		mount -o loop,noatime /mnt/$SRC/system.img system
 	elif [ -d /mnt/$SRC/system ]; then
+		echo "system is found at /mnt/$SRC/system"
 		remount_rw
 		mount --bind /mnt/$SRC/system system
 	elif [ -e /mnt/build.prop ]; then
+		echo "build.prop is found at /mnt/build.prop"
 		mount --bind /mnt system
 	else
+		echo "rm -rf *"
 		rm -rf *
 		return 1
 	fi
@@ -136,6 +153,7 @@ echo -n Detecting Android-x86...
 
 [ -z "$SRC" -a -n "$BOOT_IMAGE" ] && SRC=`dirname $BOOT_IMAGE`
 [ -z "$RAMDISK" ] && RAMDISK=ramdisk.img || RAMDISK=${RAMDISK##/dev/}
+echo "RAMDISK: $RAMDISK"
 
 for c in `cat /proc/cmdline`; do
 	case $c in
@@ -151,6 +169,7 @@ mount -t tmpfs tmpfs /android
 cd /android
 while :; do
 	for device in ${ROOT:-/dev/[hmnsv][dmrv][0-9a-z]*}; do
+		echo "device: $device"
 		check_root $device && break 2
 		mountpoint -q /mnt && umount /mnt
 	done
@@ -213,7 +232,7 @@ fi
 
 [ "$SETUPWIZARD" = "0" ] && echo "ro.setupwizard.mode=DISABLED" >> default.prop
 
-[ -n "$DEBUG" ] && SWITCH=${SWITCH:-chroot}
+# [ -n "$DEBUG" ] && SWITCH=${SWITCH:-chroot}
 
 # We must disable mdev before switching to Android
 # since it conflicts with Android's init
